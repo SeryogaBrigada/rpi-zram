@@ -1,0 +1,77 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides: zram
+# Required-Start:
+# Required-Stop:
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+### END INIT INFO
+
+start() {
+if !  modprobe zram num_devices=4
+then
+echo -e "Your Kernel needs to be compiled with ZRAM support"
+exit 1
+fi
+echo "zram devices probed successfully"
+
+# initialize the devices
+zmem=128M
+echo $zmem > /sys/block/zram0/disksize
+echo $zmem > /sys/block/zram1/disksize
+echo $zmem > /sys/block/zram2/disksize
+echo $zmem > /sys/block/zram3/disksize
+
+# Creating swap filesystems
+mkswap /dev/zram0
+mkswap /dev/zram1
+mkswap /dev/zram2
+mkswap /dev/zram3
+
+# Switch the swaps on
+swapon /dev/zram0 -p 1
+swapon /dev/zram1 -p 1
+swapon /dev/zram2 -p 1
+swapon /dev/zram3 -p 1
+}
+
+stop() {
+# Switching off swap
+swapoff /dev/zram0
+swapoff /dev/zram1
+swapoff /dev/zram2
+swapoff /dev/zram3
+
+echo 1 > /sys/block/zram0/reset
+wait
+echo 1 > /sys/block/zram1/reset
+wait
+echo 1 > /sys/block/zram2/reset
+wait
+echo 1 > /sys/block/zram3/reset
+wait
+sleep 2
+modprobe -r zram
+}
+
+case "$1" in
+start)
+start
+;;
+
+stop)
+stop
+;;
+
+restart)
+stop
+sleep 3
+start
+;;
+*)
+
+echo "Usage: $0 {start|stop|restart}"
+RETVAL=1
+esac
+exit $RETVAL
+
