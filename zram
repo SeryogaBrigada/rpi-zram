@@ -16,7 +16,7 @@ fi
 echo "zram devices probed successfully"
 
 # initialize the devices
-zmem=128M
+zmem=64M
 echo $zmem > /sys/block/zram0/disksize
 echo $zmem > /sys/block/zram1/disksize
 echo $zmem > /sys/block/zram2/disksize
