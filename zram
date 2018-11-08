@@ -16,7 +16,7 @@ fi
 echo "zram devices probed successfully"
 
 # initialize the devices
-zmem=$(expr $(cat /proc/meminfo | grep MemTotal | tr -dc '0-9') / 10)K
+zmem=$(expr $(cat /proc/meminfo | grep MemTotal | tr -dc '0-9') / 20)K
 echo $zmem > /sys/block/zram0/disksize
 echo $zmem > /sys/block/zram1/disksize
 echo $zmem > /sys/block/zram2/disksize
