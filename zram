@@ -7,49 +7,40 @@
 # Default-Stop: 0 1 6
 ### END INIT INFO
 
+NRDEVICES=$(grep -c ^processor /proc/cpuinfo | sed 's/^0$/1/')
+
 start() {
-if !  modprobe zram num_devices=4
-then
-echo -e "Your Kernel needs to be compiled with ZRAM support"
-exit 1
+if modinfo zram | grep -q ' zram_num_devices:' 2>/dev/null; then
+  MODPROBE_ARGS="zram_num_devices=${NRDEVICES}"
+elif modinfo zram | grep -q ' num_devices:' 2>/dev/null; then
+  MODPROBE_ARGS="num_devices=${NRDEVICES}"
+else
+  exit 1
 fi
-echo "zram devices probed successfully"
+modprobe zram $MODPROBE_ARGS
+
+# Calculate memory to use for zram (1/5 of ram)
+totalmem=`LC_ALL=C free | grep -e "^Mem:" | sed -e 's/^Mem: *//' -e 's/  *.*//'`
+mem=$(((totalmem / 5 / ${NRDEVICES}) * 1024))
 
 # initialize the devices
-zmem=$(expr $(cat /proc/meminfo | grep MemTotal | tr -dc '0-9') / 20)K
-echo $zmem > /sys/block/zram0/disksize
-echo $zmem > /sys/block/zram1/disksize
-echo $zmem > /sys/block/zram2/disksize
-echo $zmem > /sys/block/zram3/disksize
-
-# Creating swap filesystems
-mkswap /dev/zram0
-mkswap /dev/zram1
-mkswap /dev/zram2
-mkswap /dev/zram3
-
-# Switch the swaps on
-swapon /dev/zram0 -p 1
-swapon /dev/zram1 -p 1
-swapon /dev/zram2 -p 1
-swapon /dev/zram3 -p 1
+for i in $(seq ${NRDEVICES}); do
+  DEVNUMBER=$((i - 1))
+  echo $mem > /sys/block/zram${DEVNUMBER}/disksize
+  mkswap /dev/zram${DEVNUMBER}
+  swapon -p 1 /dev/zram${DEVNUMBER}
+done
 }
 
 stop() {
 # Switching off swap
-swapoff /dev/zram0
-swapoff /dev/zram1
-swapoff /dev/zram2
-swapoff /dev/zram3
+for i in $(seq ${NRDEVICES}); do
+  DEVNUMBER=$((i - 1))
+  swapoff /dev/zram${DEVNUMBER}
+  echo 1 > /sys/block/zram${DEVNUMBER}/reset
+  wait
+done
 
-echo 1 > /sys/block/zram0/reset
-wait
-echo 1 > /sys/block/zram1/reset
-wait
-echo 1 > /sys/block/zram2/reset
-wait
-echo 1 > /sys/block/zram3/reset
-wait
 sleep 2
 modprobe -r zram
 }
