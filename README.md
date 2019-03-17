@@ -7,11 +7,7 @@ We can calculate it easy:
 Number of devices = number of cores
 Device size = 1/5 * RAM / (Number of devices)
 
-My experiment showed we can use for ZRAM maximum 1/5 of available RAM to achieve good operating performance.
-If we increase the size of the ZRAM device, the system will occasionally freeze and fall down.
+My experiment showed that we can use a maximum of 1/5 of the available RAM for ZRAM to achieve the best performance.
+Increasing the size of a ZRAM device may cause the system hang.
 
-To install it just run in terminal:
-sh install.sh
-
-To remove:
-sh remove.sh
+To install, simply launch in the terminal *_install.sh or *_remove.sh scripts according to your initialization system.
