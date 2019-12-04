@@ -21,14 +21,19 @@ modprobe zram $MODPROBE_ARGS
 modprobe lz4 lz4_compress
 
 # Calculate memory to use for zram (1/5 of ram)
-totalmem=`LC_ALL=C free | grep -e "^Mem:" | sed -e 's/^Mem: *//' -e 's/  *.*//'`
-mem=$(((totalmem / 5 / ${NRDEVICES}) * 1024))
+TOTALMEM=`LC_ALL=C free | grep -e "^Mem:" | sed -e 's/^Mem: *//' -e 's/  *.*//'`
+ZMEM=$((TOTALMEM / 1024 / 5))
+# Limit to 2048M
+if [ ${ZMEM} -gt 2048 ]; then
+  ZMEM=2048
+fi
+MEM=$((ZMEM / ${NRDEVICES}))
 
 # initialize the devices
 for i in $(seq ${NRDEVICES}); do
   DEVNUMBER=$((i - 1))
   echo lz4 > /sys/block/zram${DEVNUMBER}/comp_algorithm
-  echo $mem > /sys/block/zram${DEVNUMBER}/disksize
+  echo ${MEM}M > /sys/block/zram${DEVNUMBER}/disksize
   mkswap /dev/zram${DEVNUMBER}
   swapon -p 1 /dev/zram${DEVNUMBER}
 done
